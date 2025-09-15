@@ -1,0 +1,358 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>New Student Register Button</title>
+  <style>
+    /* Right-corner fixed button */
+    #newStudentBtn {
+      position: fixed;
+      right: 20px;
+      bottom: 20px;
+      background: #007bff;
+      color: white;
+      border: none;
+      padding: 12px 18px;
+      border-radius: 8px;
+      font-size: 15px;
+      cursor: pointer;
+      box-shadow: 0 6px 14px rgba(0,0,0,0.15);
+      z-index: 1000;
+      transition: transform 0.2s ease;
+    }
+    #newStudentBtn:hover { 
+      transform: translateY(-2px); 
+      background: #0056b3;
+    }
+
+    /* Simple modal (optional nicer UI) */
+    .modal-backdrop {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.5);
+      align-items: center;
+      justify-content: center;
+      z-index: 1050;
+    }
+    .modal {
+      background: white;
+      padding: 24px;
+      border-radius: 10px;
+      width: 400px;
+      max-width: calc(100% - 40px);
+      box-shadow: 0 8px 30px rgba(0,0,0,0.2);
+      animation: modalSlideIn 0.3s ease;
+    }
+    
+    @keyframes modalSlideIn {
+      from {
+        opacity: 0;
+        transform: translateY(-20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+    
+    .modal h2 { 
+      margin: 0 0 16px 0; 
+      font-size: 20px; 
+      color: #333;
+      text-align: center;
+    }
+    .modal label { 
+      display: block; 
+      margin-top: 12px; 
+      font-size: 14px; 
+      font-weight: 500;
+      color: #555;
+    }
+    .modal input { 
+      width: 100%; 
+      padding: 10px; 
+      margin-top: 6px; 
+      box-sizing: border-box;
+      border-radius: 6px; 
+      border: 1px solid #ddd;
+      font-size: 14px;
+      transition: border-color 0.2s ease;
+    }
+    .modal input:focus {
+      outline: none;
+      border-color: #007bff;
+      box-shadow: 0 0 0 2px rgba(0,123,255,0.25);
+    }
+    .modal .actions { 
+      margin-top: 20px; 
+      text-align: right; 
+      display: flex;
+      gap: 10px;
+      justify-content: flex-end;
+    }
+    .modal button { 
+      padding: 10px 16px; 
+      border-radius: 6px; 
+      border: none; 
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 500;
+      transition: all 0.2s ease;
+    }
+    .btn-primary { 
+      background: #007bff; 
+      color: #fff; 
+    }
+    .btn-primary:hover {
+      background: #0056b3;
+    }
+    .btn-ghost { 
+      background: transparent; 
+      border: 1px solid #ccc; 
+      color: #666;
+    }
+    .btn-ghost:hover {
+      background: #f8f9fa;
+      border-color: #999;
+    }
+    
+    /* Error message styling */
+    .error-message {
+      color: #dc3545;
+      font-size: 12px;
+      margin-top: 4px;
+      display: none;
+    }
+    
+    /* Success message */
+    .success-message {
+      background: #d4edda;
+      color: #155724;
+      padding: 12px;
+      border-radius: 6px;
+      margin-bottom: 16px;
+      display: none;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Fixed button in the right corner -->
+  <button id="newStudentBtn" aria-haspopup="dialog" aria-controls="registerModal">
+    👤 New Student Register
+  </button>
+
+  <!-- Modal for registration form -->
+  <div id="modalBackdrop" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <div class="modal" id="registerModal">
+      <h2 id="modalTitle">New Student Registration</h2>
+      
+      <div id="successMessage" class="success-message">
+        Thank you! Your registration has been received successfully.
+      </div>
+
+      <label for="name">Full Name (English only)</label>
+      <input id="name" type="text" placeholder="Enter full name" required />
+      <div id="nameError" class="error-message">Please enter your full name.</div>
+
+      <label for="enrollment">Enrollment Number</label>
+      <input id="enrollment" type="text" placeholder="Enter enrollment number" required />
+      <div id="enrollmentError" class="error-message">Please enter enrollment number.</div>
+
+      <label for="email">Email Address (Optional)</label>
+      <input id="email" type="email" placeholder="name@example.com" />
+      <div id="emailError" class="error-message">Please enter a valid email address.</div>
+
+      <label for="phone">Phone Number (Optional)</label>
+      <input id="phone" type="tel" placeholder="+1 555 555 5555" />
+      <div id="phoneError" class="error-message">Please enter a valid phone number.</div>
+
+      <div class="actions">
+        <button class="btn-ghost" id="cancelBtn">Cancel</button>
+        <button class="btn-primary" id="submitBtn">Register Student</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const btn = document.getElementById('newStudentBtn');
+    const backdrop = document.getElementById('modalBackdrop');
+    const cancelBtn = document.getElementById('cancelBtn');
+    const submitBtn = document.getElementById('submitBtn');
+    const successMessage = document.getElementById('successMessage');
+
+    // Function to show error message
+    function showError(fieldId, message) {
+      const errorElement = document.getElementById(fieldId + 'Error');
+      errorElement.textContent = message;
+      errorElement.style.display = 'block';
+    }
+
+    // Function to hide error message
+    function hideError(fieldId) {
+      const errorElement = document.getElementById(fieldId + 'Error');
+      errorElement.style.display = 'none';
+    }
+
+    // Function to clear all errors
+    function clearAllErrors() {
+      ['name', 'enrollment', 'email', 'phone'].forEach(field => {
+        hideError(field);
+      });
+    }
+
+    // Function to validate form
+    function validateForm() {
+      let isValid = true;
+      clearAllErrors();
+
+      const name = document.getElementById('name').value.trim();
+      const enrollment = document.getElementById('enrollment').value.trim();
+      const email = document.getElementById('email').value.trim();
+      const phone = document.getElementById('phone').value.trim();
+
+      // Validate name
+      if (!name) {
+        showError('name', 'Please enter your full name.');
+        isValid = false;
+      } else if (name.length < 2) {
+        showError('name', 'Name must be at least 2 characters long.');
+        isValid = false;
+      }
+
+      // Validate enrollment
+      if (!enrollment) {
+        showError('enrollment', 'Please enter enrollment number.');
+        isValid = false;
+      } else if (!/^\d+$/.test(enrollment)) {
+        showError('enrollment', 'Enrollment number should contain only digits.');
+        isValid = false;
+      }
+
+      // Validate email (optional but if provided, should be valid)
+      if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        showError('email', 'Please enter a valid email address.');
+        isValid = false;
+      }
+
+      // Validate phone (optional but if provided, should be valid)
+      if (phone && !/^[\+]?[1-9][\d]{0,15}$/.test(phone.replace(/[\s\-\(\)]/g, ''))) {
+        showError('phone', 'Please enter a valid phone number.');
+        isValid = false;
+      }
+
+      return isValid;
+    }
+
+    // Function to open modal
+    function openModal() {
+      backdrop.style.display = 'flex';
+      clearAllErrors();
+      successMessage.style.display = 'none';
+      // Focus first field for accessibility
+      document.getElementById('name').focus();
+    }
+
+    // Function to close modal
+    function closeModal() {
+      backdrop.style.display = 'none';
+      // Clear form
+      document.getElementById('name').value = '';
+      document.getElementById('enrollment').value = '';
+      document.getElementById('email').value = '';
+      document.getElementById('phone').value = '';
+      clearAllErrors();
+      successMessage.style.display = 'none';
+    }
+
+    // Function to submit form
+    function submitForm() {
+      if (!validateForm()) {
+        return;
+      }
+
+      const name = document.getElementById('name').value.trim();
+      const enrollment = document.getElementById('enrollment').value.trim();
+      const email = document.getElementById('email').value.trim();
+      const phone = document.getElementById('phone').value.trim();
+
+      // Show success message
+      successMessage.style.display = 'block';
+      
+      // Log the data (replace with actual API call)
+      console.log('Student Registration Data:', { 
+        name, 
+        enrollment, 
+        email, 
+        phone,
+        timestamp: new Date().toISOString()
+      });
+
+      // Simulate API call delay
+      setTimeout(() => {
+        closeModal();
+        alert(`Student ${name} (Enrollment: ${enrollment}) has been registered successfully!`);
+      }, 1500);
+    }
+
+    // Event listeners
+    btn.addEventListener('click', openModal);
+
+    cancelBtn.addEventListener('click', closeModal);
+
+    backdrop.addEventListener('click', (e) => {
+      if (e.target === backdrop) closeModal();
+    });
+
+    submitBtn.addEventListener('click', submitForm);
+
+    // Real-time validation
+    document.getElementById('name').addEventListener('input', () => {
+      if (document.getElementById('name').value.trim()) {
+        hideError('name');
+      }
+    });
+
+    document.getElementById('enrollment').addEventListener('input', () => {
+      if (document.getElementById('enrollment').value.trim()) {
+        hideError('enrollment');
+      }
+    });
+
+    document.getElementById('email').addEventListener('input', () => {
+      if (document.getElementById('email').value.trim()) {
+        hideError('email');
+      }
+    });
+
+    document.getElementById('phone').addEventListener('input', () => {
+      if (document.getElementById('phone').value.trim()) {
+        hideError('phone');
+      }
+    });
+
+    // Accessibility: close modal with Esc
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && backdrop.style.display === 'flex') {
+        closeModal();
+      }
+    });
+
+    // Accessibility: submit form with Enter key
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && backdrop.style.display === 'flex') {
+        e.preventDefault();
+        submitForm();
+      }
+    });
+  </script>
+</body>
+</html>
+
+
+
+
+
+

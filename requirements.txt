@@ -1,0 +1,11 @@
+numpy
+opencv-contrib-python
+opencv-python
+openpyxl
+pandas
+pillow
+pyttsx3
+qrcode[pil]
+pyzbar
+requests
+twilio
