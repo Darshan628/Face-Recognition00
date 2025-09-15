@@ -1,0 +1,251 @@
+{% extends "base.html" %}
+
+{% block title %}Take Attendance - Web Attendance System{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-10">
+        <div class="card">
+            <div class="card-header text-center">
+                <h3><i class="fas fa-camera me-2"></i>Take Attendance</h3>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-4">
+                            <label for="subjectSelect" class="form-label">Select Subject:</label>
+                            <select class="form-select" id="subjectSelect">
+                                <option value="">Choose a subject...</option>
+                                {% for subject in subjects %}
+                                <option value="{{ subject }}">{{ subject }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <div class="camera-container mb-4">
+                            <video id="video" autoplay muted></video>
+                            <canvas id="canvas"></canvas>
+                            <button id="captureBtn" class="capture-btn" disabled>
+                                <i class="fas fa-camera text-white"></i>
+                            </button>
+                        </div>
+                        
+                        <div class="text-center">
+                            <button id="startCamera" class="btn btn-primary me-2">
+                                <i class="fas fa-video me-2"></i>Start Camera
+                            </button>
+                            <button id="stopCamera" class="btn btn-secondary" disabled>
+                                <i class="fas fa-stop me-2"></i>Stop Camera
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <div id="resultContainer" class="text-center" style="display: none;">
+                            <h5>Recognition Result:</h5>
+                            <div id="resultContent"></div>
+                        </div>
+                        
+                        <div id="attendanceLog" class="mt-4">
+                            <h5><i class="fas fa-list me-2"></i>Attendance Log</h5>
+                            <div id="logContent" class="border rounded p-3" style="max-height: 300px; overflow-y: auto;">
+                                <p class="text-muted">No attendance taken yet...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="alertContainer"></div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let stream = null;
+let video = document.getElementById('video');
+let canvas = document.getElementById('canvas');
+let ctx = canvas.getContext('2d');
+let captureBtn = document.getElementById('captureBtn');
+let startBtn = document.getElementById('startCamera');
+let stopBtn = document.getElementById('stopCamera');
+let subjectSelect = document.getElementById('subjectSelect');
+let resultContainer = document.getElementById('resultContainer');
+let resultContent = document.getElementById('resultContent');
+let logContent = document.getElementById('logContent');
+let alertContainer = document.getElementById('alertContainer');
+
+// Enable/disable capture button based on subject selection
+subjectSelect.addEventListener('change', function() {
+    if (this.value && stream) {
+        captureBtn.disabled = false;
+    } else {
+        captureBtn.disabled = true;
+    }
+});
+
+// Start camera
+startBtn.addEventListener('click', async function() {
+    try {
+        stream = await navigator.mediaDevices.getUserMedia({ 
+            video: { 
+                width: 640, 
+                height: 480,
+                facingMode: 'user'
+            } 
+        });
+        video.srcObject = stream;
+        startBtn.disabled = true;
+        stopBtn.disabled = false;
+        
+        if (subjectSelect.value) {
+            captureBtn.disabled = false;
+        }
+        
+        showAlert('Camera started successfully!', 'success');
+    } catch (err) {
+        showAlert('Error accessing camera: ' + err.message, 'danger');
+    }
+});
+
+// Stop camera
+stopBtn.addEventListener('click', function() {
+    if (stream) {
+        stream.getTracks().forEach(track => track.stop());
+        stream = null;
+        video.srcObject = null;
+        startBtn.disabled = false;
+        stopBtn.disabled = true;
+        captureBtn.disabled = true;
+        showAlert('Camera stopped', 'info');
+    }
+});
+
+// Capture photo
+captureBtn.addEventListener('click', function() {
+    if (!subjectSelect.value) {
+        showAlert('Please select a subject first!', 'warning');
+        return;
+    }
+    
+    // Set canvas size to match video
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    
+    // Draw video frame to canvas
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    
+    // Convert to base64
+    const imageData = canvas.toDataURL('image/jpeg', 0.8);
+    
+    // Show loading
+    resultContent.innerHTML = '<div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div><p class="mt-2">Recognizing face...</p>';
+    resultContainer.style.display = 'block';
+    
+    // Send to server
+    fetch('/recognize', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            image: imageData,
+            subject: subjectSelect.value
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            resultContent.innerHTML = `
+                <div class="alert alert-success">
+                    <h6><i class="fas fa-check-circle me-2"></i>Attendance Marked!</h6>
+                    <p class="mb-1"><strong>Student:</strong> ${data.student_name}</p>
+                    <p class="mb-1"><strong>ID:</strong> ${data.student_id}</p>
+                    <p class="mb-1"><strong>Subject:</strong> ${subjectSelect.value}</p>
+                    <p class="mb-0"><strong>Confidence:</strong> ${data.confidence.toFixed(2)}%</p>
+                </div>
+            `;
+            
+            // Add to log
+            addToLog(data.student_name, data.student_id, subjectSelect.value, data.confidence);
+            
+            showAlert(data.message, 'success');
+        } else {
+            resultContent.innerHTML = `
+                <div class="alert alert-danger">
+                    <h6><i class="fas fa-exclamation-triangle me-2"></i>Recognition Failed</h6>
+                    <p class="mb-0">${data.message}</p>
+                </div>
+            `;
+            showAlert(data.message, 'danger');
+        }
+    })
+    .catch(error => {
+        resultContent.innerHTML = `
+            <div class="alert alert-danger">
+                <h6><i class="fas fa-exclamation-triangle me-2"></i>Error</h6>
+                <p class="mb-0">${error.message}</p>
+            </div>
+        `;
+        showAlert('Error: ' + error.message, 'danger');
+    });
+});
+
+function addToLog(studentName, studentId, subject, confidence) {
+    const logEntry = document.createElement('div');
+    logEntry.className = 'border-bottom pb-2 mb-2';
+    logEntry.innerHTML = `
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <strong>${studentName}</strong> (ID: ${studentId})
+                <br>
+                <small class="text-muted">${subject} - ${new Date().toLocaleTimeString()}</small>
+            </div>
+            <span class="badge bg-success">${confidence.toFixed(1)}%</span>
+        </div>
+    `;
+    
+    // Remove "No attendance taken yet" message if it exists
+    const noDataMsg = logContent.querySelector('.text-muted');
+    if (noDataMsg) {
+        noDataMsg.remove();
+    }
+    
+    logContent.insertBefore(logEntry, logContent.firstChild);
+}
+
+function showAlert(message, type) {
+    const alert = document.createElement('div');
+    alert.className = `alert alert-${type} alert-dismissible fade show position-fixed`;
+    alert.style.top = '20px';
+    alert.style.right = '20px';
+    alert.style.zIndex = '9999';
+    alert.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    alertContainer.appendChild(alert);
+    
+    // Auto remove after 5 seconds
+    setTimeout(() => {
+        if (alert.parentNode) {
+            alert.parentNode.removeChild(alert);
+        }
+    }, 5000);
+}
+
+// Cleanup on page unload
+window.addEventListener('beforeunload', function() {
+    if (stream) {
+        stream.getTracks().forEach(track => track.stop());
+    }
+});
+</script>
+{% endblock %}
+
+
+
+

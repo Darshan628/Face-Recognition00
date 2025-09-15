@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+
+{% block title %}Home - Web Attendance System{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-body text-center p-5">
+                <i class="fas fa-graduation-cap fa-5x text-warning mb-4"></i>
+                <h1 class="card-title mb-4">Web Attendance System</h1>
+                <p class="card-text lead mb-5">
+                    Take attendance using face recognition technology. 
+                    Simply capture a photo and the system will automatically 
+                    recognize the student and mark attendance.
+                </p>
+                
+                <div class="row g-4">
+                    <div class="col-md-6">
+                        <div class="card h-100">
+                            <div class="card-body text-center">
+                                <i class="fas fa-camera fa-3x text-primary mb-3"></i>
+                                <h5 class="card-title">Take Attendance</h5>
+                                <p class="card-text">Use your camera to capture student photos and mark attendance automatically.</p>
+                                <a href="/take_attendance" class="btn btn-primary">
+                                    <i class="fas fa-camera me-2"></i>Start Taking Attendance
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <div class="card h-100">
+                            <div class="card-body text-center">
+                                <i class="fas fa-chart-bar fa-3x text-success mb-3"></i>
+                                <h5 class="card-title">View Attendance</h5>
+                                <p class="card-text">View attendance records and generate reports for different subjects.</p>
+                                <a href="/view_attendance" class="btn btn-success">
+                                    <i class="fas fa-chart-bar me-2"></i>View Records
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mt-5">
+                    <h4>Available Subjects</h4>
+                    <div class="row g-2">
+                        {% for subject in subjects %}
+                        <div class="col-md-2 col-sm-4 col-6">
+                            <span class="badge bg-warning text-dark fs-6 p-2">{{ subject }}</span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                
+                <div class="mt-5">
+                    <h5>How it works:</h5>
+                    <div class="row text-start">
+                        <div class="col-md-4">
+                            <div class="d-flex align-items-center mb-3">
+                                <div class="bg-primary rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 40px; height: 40px;">
+                                    <span class="text-white fw-bold">1</span>
+                                </div>
+                                <span>Select Subject</span>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="d-flex align-items-center mb-3">
+                                <div class="bg-primary rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 40px; height: 40px;">
+                                    <span class="text-white fw-bold">2</span>
+                                </div>
+                                <span>Capture Photo</span>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="d-flex align-items-center mb-3">
+                                <div class="bg-primary rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 40px; height: 40px;">
+                                    <span class="text-white fw-bold">3</span>
+                                </div>
+                                <span>Auto Save to Excel</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+
+
+
